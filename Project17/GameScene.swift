@@ -8,6 +8,13 @@
 import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
+    // MARK: - Private properties
+
+    private let possibleEnemies = ["ball", "hammer", "tv"]
+    
+    private var isGameOver = false
+    private var gameTimer: Timer?
+    
     private var starfield: SKEmitterNode!
     private var player: SKSpriteNode!
     private var scoreLabel: SKLabelNode!
@@ -42,8 +49,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         physicsWorld.contactDelegate = self
+        
+        // The scheduledTimer() timer not only creates a timer, but also starts it immediately.
+        // it will create about three enemies a second
+        gameTimer = Timer.scheduledTimer(
+            timeInterval: 0.35, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
+        )
     }
     
     override func update(_ currentTime: TimeInterval) {
+        for node in children {
+            if node.position.x <= -300 { node.removeFromParent() }
+        }
+        
+        if !isGameOver { score += 1 }
+    }
+    
+    @objc
+    private func createEnemy() {
+        guard let enemyName = possibleEnemies.randomElement() else { return }
+        
+        let spriteNode = SKSpriteNode(imageNamed: enemyName)
+        spriteNode.position = CGPoint(x: 1200, y: Int.random(in: 50...736))
+        addChild(spriteNode)
+        
+        spriteNode.physicsBody = SKPhysicsBody(texture: spriteNode.texture!, size: spriteNode.size)
+        spriteNode.physicsBody?.categoryBitMask = 1
+        spriteNode.physicsBody?.velocity = CGVector(dx: -500, dy: 0)
+        spriteNode.physicsBody?.angularVelocity = 5
+        
+        // its movement and rotation will never slow down over time
+        spriteNode.physicsBody?.linearDamping = 0
+        spriteNode.physicsBody?.angularDamping = 0
     }
 }
