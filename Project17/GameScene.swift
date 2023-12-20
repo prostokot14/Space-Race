@@ -15,6 +15,8 @@ class GameScene: SKScene {
     private var isPlayerTouched = false
     private var isGameOver = false
     private var gameTimer: Timer?
+    private var timeInterval: Double = 1
+    private var numberOfEnemies = 0
     
     private var starfield: SKEmitterNode!
     private var player: SKSpriteNode!
@@ -55,7 +57,7 @@ class GameScene: SKScene {
         // The scheduledTimer() timer not only creates a timer, but also starts it immediately.
         // it will create about three enemies a second
         gameTimer = Timer.scheduledTimer(
-            timeInterval: 0.35, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
+            timeInterval: timeInterval, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
         )
     }
     
@@ -106,6 +108,8 @@ class GameScene: SKScene {
     
     @objc
     private func createEnemy() {
+        numberOfEnemies += 1
+        
         guard let enemyName = possibleEnemies.randomElement() else { return }
         
         let spriteNode = SKSpriteNode(imageNamed: enemyName)
@@ -120,6 +124,20 @@ class GameScene: SKScene {
         // its movement and rotation will never slow down over time
         spriteNode.physicsBody?.linearDamping = 0
         spriteNode.physicsBody?.angularDamping = 0
+        
+        if numberOfEnemies >= 20 {
+            if timeInterval >= 0.1 {
+                timeInterval -= 0.1
+            }
+            
+            gameTimer?.invalidate()
+            gameTimer = Timer.scheduledTimer(
+                timeInterval: timeInterval, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
+            )
+            
+            numberOfEnemies = 0
+            print("timeInterval = \(timeInterval)")
+        }
     }
 }
 
