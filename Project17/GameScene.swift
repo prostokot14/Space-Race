@@ -12,6 +12,7 @@ class GameScene: SKScene {
 
     private let possibleEnemies = ["ball", "hammer", "tv"]
     
+    private var isPlayerTouched = false
     private var isGameOver = false
     private var gameTimer: Timer?
     
@@ -35,6 +36,7 @@ class GameScene: SKScene {
         starfield.zPosition = -1
         
         player = SKSpriteNode(imageNamed: "player")
+        player.name = "player"
         player.position = CGPoint(x: 100, y: 384)
         player.physicsBody = SKPhysicsBody(texture: player.texture!, size: player.size) // per-pixel collision detection
         player.physicsBody?.contactTestBitMask = 1
@@ -66,14 +68,40 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if isPlayerTouched {
+            guard let touch = touches.first else { return }
+
+            var location = touch.location(in: self)
+        
+            if location.y < 100 { location.y = 100 }
+            else if location.y > 668 { location.y = 668 }
+            
+            player.position = location
+        }
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         
-        var location = touch.location(in: self)
+        let location = touch.location(in: self)
         
-        if location.y < 100 { location.y = 100 }
-        else if location.y > 668 { location.y = 668 }
+        for node in nodes(at: location) {
+            if node.name == "player" {
+                isPlayerTouched = true
+            }
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
         
-        player.position = location
+        let location = touch.location(in: self)
+        
+        for node in nodes(at: location) {
+            if node.name == "player" {
+                isPlayerTouched = false
+            }
+        }
     }
     
     @objc
