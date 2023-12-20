@@ -21,6 +21,8 @@ class GameScene: SKScene {
     private var starfield: SKEmitterNode!
     private var player: SKSpriteNode!
     private var scoreLabel: SKLabelNode!
+    private var gameOverLabel: SKLabelNode?
+    private var newGameLabel: SKLabelNode?
     
     private var score = 0 {
         didSet {
@@ -39,10 +41,8 @@ class GameScene: SKScene {
         
         player = SKSpriteNode(imageNamed: "player")
         player.name = "player"
-        player.position = CGPoint(x: 100, y: 384)
         player.physicsBody = SKPhysicsBody(texture: player.texture!, size: player.size) // per-pixel collision detection
         player.physicsBody?.contactTestBitMask = 1
-        addChild(player)
         
         scoreLabel = SKLabelNode(fontNamed: "Chalkduster")
         scoreLabel.position = CGPoint(x: 16, y: 16)
@@ -54,11 +54,7 @@ class GameScene: SKScene {
         physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         physicsWorld.contactDelegate = self
         
-        // The scheduledTimer() timer not only creates a timer, but also starts it immediately.
-        // it will create about three enemies a second
-        gameTimer = Timer.scheduledTimer(
-            timeInterval: timeInterval, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
-        )
+        startNewGame()
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -90,6 +86,8 @@ class GameScene: SKScene {
         for node in nodes(at: location) {
             if node.name == "player" {
                 isPlayerTouched = true
+            } else if node.name == "NewGame" {
+                startNewGame()
             }
         }
     }
@@ -106,6 +104,61 @@ class GameScene: SKScene {
         }
     }
     
+    private func startNewGame() {
+        score = 0
+        numberOfEnemies = 0
+        timeInterval = 1
+        isGameOver = false
+        
+        if let gameOverLabel, let newGameLabel {
+            gameOverLabel.removeFromParent()
+            newGameLabel.removeFromParent()
+        }
+        
+        for node in children {
+            if node.name == "Enemy" {
+                node.removeFromParent()
+            }
+        }
+        
+        player.position = CGPoint(x: 100, y: 384)
+        addChild(player)
+
+        // The scheduledTimer() timer not only creates a timer, but also starts it immediately.
+        // it will create about three enemies a second
+        gameTimer = Timer.scheduledTimer(
+            timeInterval: timeInterval, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true
+        )
+    }
+    
+    private func endGame() {
+        let explosion = SKEmitterNode(fileNamed: "explosion")!
+        explosion.position = player.position
+        addChild(explosion)
+        
+        player.removeFromParent()
+        
+        isGameOver = true
+        gameTimer?.invalidate()
+        
+        gameOverLabel = SKLabelNode(fontNamed: "Chalkduster")
+        gameOverLabel?.position = CGPoint(x: 512, y: 384)
+        gameOverLabel?.zPosition = 1
+        gameOverLabel?.fontSize = 48
+        gameOverLabel?.horizontalAlignmentMode = .center
+        gameOverLabel?.text = "GAME OVER"
+        addChild(gameOverLabel!)
+
+        newGameLabel = SKLabelNode(fontNamed: "Chalkduster")
+        newGameLabel?.position = CGPoint(x: 512, y: 324)
+        newGameLabel?.zPosition = 1
+        newGameLabel?.fontSize = 32
+        newGameLabel?.horizontalAlignmentMode = .center
+        newGameLabel?.text = "New Game"
+        newGameLabel?.name = "NewGame"
+        addChild(newGameLabel!)
+    }
+    
     @objc
     private func createEnemy() {
         numberOfEnemies += 1
@@ -114,6 +167,7 @@ class GameScene: SKScene {
         
         let spriteNode = SKSpriteNode(imageNamed: enemyName)
         spriteNode.position = CGPoint(x: 1200, y: Int.random(in: 50...736))
+        spriteNode.name = "Enemy"
         addChild(spriteNode)
         
         spriteNode.physicsBody = SKPhysicsBody(texture: spriteNode.texture!, size: spriteNode.size)
@@ -136,7 +190,6 @@ class GameScene: SKScene {
             )
             
             numberOfEnemies = 0
-            print("timeInterval = \(timeInterval)")
         }
     }
 }
@@ -145,13 +198,6 @@ class GameScene: SKScene {
 
 extension GameScene: SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
-        let explosion = SKEmitterNode(fileNamed: "explosion")!
-        explosion.position = player.position
-        addChild(explosion)
-        
-        player.removeFromParent()
-        
-        isGameOver = true
-        gameTimer?.invalidate()
+        endGame()
     }
 }
