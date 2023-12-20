@@ -152,5 +152,6 @@ extension GameScene: SKPhysicsContactDelegate {
         player.removeFromParent()
         
         isGameOver = true
+        gameTimer?.invalidate()
     }
 }
